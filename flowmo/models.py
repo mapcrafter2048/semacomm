@@ -15,8 +15,11 @@ import torch
 from einops import rearrange, repeat
 from mup import MuReadout
 from torch import Tensor, nn
+import numpy as np
+import lookup_free_quantize
+from pyldpc import make_ldpc, encode, decode, get_message
 
-from flowmo import lookup_free_quantize
+
 
 MUP_ENABLED = True
 
@@ -59,6 +62,10 @@ def rope(pos: Tensor, dim: int, theta: int) -> Tensor:
 
 
 def apply_rope(xq: Tensor, xk: Tensor, freqs_cis: Tensor):
+    # Safety check for empty tensors
+    if xq.numel() == 0 or xk.numel() == 0:
+        return xq, xk
+
     xq_ = xq.float().reshape(*xq.shape[:-1], -1, 1, 2)
     xk_ = xk.float().reshape(*xk.shape[:-1], -1, 1, 2)
     xq_out = freqs_cis[..., 0] * xq_[..., 0] + freqs_cis[..., 1] * xq_[..., 1]
@@ -578,7 +585,7 @@ class FlowMo(nn.Module):
         self.encoder = Flux(encoder_params, name="encoder")
         self.decoder = Flux(decoder_params, name="decoder")
 
-    @torch.compile
+    # @torch.compile
     def encode(self, img):
         b, c, h, w = img.shape
 
@@ -604,11 +611,11 @@ class FlowMo(nn.Module):
         )
         return pred, decode_aux
 
-    @torch.compile
+    # @torch.compile
     def decode(self, *args, **kwargs):
         return self._decode(*args, **kwargs)
 
-    @torch.compile
+    # @torch.compile
     def decode_checkpointed(self, *args, **kwargs):
         # Need to compile(checkpoint), not checkpoint(compile)
         assert not kwargs, kwargs
@@ -688,14 +695,17 @@ class FlowMo(nn.Module):
         code, _, aux["quantizer_loss"] = self._quantize(code)
 
         mask = torch.ones_like(code[..., :1])
-        code = torch.concatenate([code, mask], axis=-1)
+        # code = torch.concatenate([code, mask], axis=-1)
+        code = torch.cat([code, mask], dim=-1)
         code_pre_cfg = code
 
         if self.config.model.enable_cfg and enable_cfg:
             cfg_mask = (torch.rand((b,), device=code.device) > 0.1)[:, None, None]
             code = code * cfg_mask
 
-        v_est, decode_aux = self.decode(noised_img, code, timesteps)
+        # v_est, decode_aux = self.decode(noised_img, code, timesteps)
+        v_est, decode_aux = self.decode_checkpointed(noised_img, code, timesteps)
+
         aux.update(decode_aux)
 
         if self.config.model.posttrain_sample:
@@ -759,6 +769,63 @@ class FlowMo(nn.Module):
 
             cfg_mask = 0.0
             null_code = code * cfg_mask if config.cfg != 1.0 else None
+
+            
+
+            samples = rf_sample(
+                model,
+                z,
+                code,
+                null_code=null_code,
+                sample_steps=config.sample_steps,
+                cfg=config.cfg,
+                schedule=config.schedule,
+            )[-1].clip(-1, 1)
+        return samples.to(torch.float32)
+    
+
+    @torch.no_grad()
+    def reconstruct_noise(self, images, Noise_level=100, dtype=torch.bfloat16, code=None):
+        """
+        Args:
+            images in [bchw] [-1, 1]
+
+        Returns:
+            images in [bchw] [-1, 1]
+        """
+        model = self
+        config = self.config.eval.sampling
+
+
+
+        with torch.autocast(
+            "cuda",
+            dtype=dtype,
+        ):
+            bs, c, h, w = images.shape
+            if code is None:
+                x = images.cuda()
+                prequantized_code = model.encode(x)[0].cuda()
+                code, _, _ = model._quantize(prequantized_code)
+
+            z = torch.randn((bs, 3, h, w)).cuda()
+
+            # print(code.shape)
+            # print(code)
+            # APPLY AWGN NOISE without encoding
+            code = apply_awgn_noise(code, Noise_level, device=code.device)
+
+            # instead of direct AWGN, we LDPC-protect first
+            # code = ldpc_protect_and_send(code, snr_db=Noise_level)
+
+            mask = torch.ones_like(code[..., :1])
+            code = torch.concatenate([code * mask, mask], axis=-1)
+
+
+            cfg_mask = 0.0
+            null_code = code * cfg_mask if config.cfg != 1.0 else None
+
+            
 
             samples = rf_sample(
                 model,
@@ -879,3 +946,129 @@ def rf_sample(
         z = z - dt * vc
         images.append(z)
     return images
+
+
+def apply_awgn_noise(code, noise_level, device=None):
+    """
+    Apply Additive White Gaussian Noise (AWGN) to the latent code based on PSNR.
+    
+    Args:
+        code: Input tensor (latent code)
+        noise_level: PSNR value on scale of 1-100 (higher = less noise)
+        device: Optional device specification. If None, uses the device of the input tensor
+    
+    Returns:
+        Noisy code tensor on the same device as input
+    """
+    # Ensure code is a tensor
+    if not isinstance(code, torch.Tensor):
+        raise TypeError("Code must be a torch.Tensor")
+    
+    # Use input tensor's device if not specified
+    if device is None:
+        device = code.device
+    
+    # Move to specified device if needed
+    code = code.to(device)
+    
+    # Handle edge cases
+    if noise_level >= 100:
+        # Perfect channel, no noise
+        return code
+    
+    # if noise_level <= 0:
+    #     # Invalid noise level
+    #     raise ValueError("Noise level must be positive")
+    
+    # Calculate signal power (average power per element)
+    # Using torch operations for efficiency
+    signal_power = torch.mean(code ** 2).item()
+    
+    # Convert PSNR to noise variance
+    # PSNR = 10 * log10(P / σ²) where P is signal power
+    # σ² = P / 10^(PSNR/10)
+    psnr_linear = 10 ** (noise_level / 10)
+    noise_variance = signal_power / psnr_linear
+    noise_std = np.sqrt(noise_variance)
+    
+    # Generate noise with same shape as code, directly on the target device
+    noise = torch.randn_like(code, device=device) * noise_std
+    
+    # Add noise to the code
+    noisy_code = code + noise
+    
+    return noisy_code
+
+
+
+n = 512     # codeword length
+dv, dc = 2, 4
+H, G = make_ldpc(n, dv, dc, systematic=True, sparse=True)
+k = G.shape[1]     # message length
+
+def ldpc_protect_and_send(code: torch.Tensor,
+                          snr_db: float) -> torch.Tensor:
+    """
+    1) Quantize float‐tensor -> uint8
+    2) Unpack bits, pad/truncate to multiple of k
+    3) LDPC‐encode each k‐bit message -> n‐bit codeword
+    4) BPSK, AWGN(snr_db)
+    5) LLR-> LDPC‐decode -> message bits -> reassemble bytes -> floats
+    """
+    device = code.device
+    # --- 1) quantize to uint8 in [0,255] ---
+    code_clamped = code.clamp(-1,1)
+    code_u8 = (((code_clamped + 1) / 2) * 255).round().to(torch.uint8)
+    # flatten batch
+    bs = code_u8.shape[0]
+    flat = code_u8.view(bs, -1).cpu().numpy()        # shape [B, Nbytes]
+    # unpack to bits => shape [B, Nbits]
+    bits = np.unpackbits(flat, axis=1)
+    Nbits = bits.shape[1]
+    # pad to multiple of k
+    pad = (-Nbits) % k
+    if pad:
+        bits = np.pad(bits, ((0,0),(0,pad)), 'constant')
+    # reshape into [B, #blocks, k]
+    messages = bits.reshape(bs, -1, k)
+    
+    # --- 3) LDPC encode block-by-block ---
+    codewords = []
+    for b in range(bs):
+        cw_b = []
+        for msg in messages[b]:
+            # Use proper pyldpc encode function: encode(G, v, snr)
+            # For encoding, we use a high SNR (no noise during encoding)
+            cw = encode(G, msg, snr=100)   # High SNR for clean encoding
+            cw_b.append(cw)
+        codewords.append(np.stack(cw_b))
+    codewords = np.stack(codewords)       # [B, #blocks, n]
+
+    # --- 4) BPSK and AWGN ---
+    x = 1 - 2*codewords                  # 0->+1,1->-1
+    snr_lin = 10**(snr_db/10)
+    sigma = np.sqrt(1/(2*snr_lin))  # Corrected for BPSK
+    noise = sigma * np.random.randn(*x.shape)
+    y = x + noise
+
+    # --- 5) decode LDPC and reassemble ---
+    decoded_msgs = []
+    for b in range(bs):
+        dm_b = []
+        for i in range(codewords.shape[1]):
+            # Use proper pyldpc decode function: decode(H, y, snr)
+            decoded_bits = decode(H, y[b,i], snr=snr_db, maxiter=50)
+            # Extract message bits (first k bits for systematic code)
+            msg_est = decoded_bits[:k]
+            dm_b.append(msg_est)
+        decoded_msgs.append(np.stack(dm_b))
+    decoded_msgs = np.stack(decoded_msgs)  # [B, #blocks, k]
+    decoded_bits = decoded_msgs.reshape(bs, -1)[:, :Nbits]
+
+    # pack bits->bytes->uint8 tensor
+    out_bytes = np.packbits(decoded_bits, axis=1)
+    out_bytes = out_bytes.reshape(code_u8.shape)   # [B, ...]
+    code_rec = torch.from_numpy(out_bytes).to(device).to(torch.float32)
+    # dequantize back to [-1,1]
+    code_rec = (code_rec / 255)*2 - 1
+    return code_rec

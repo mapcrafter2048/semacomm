@@ -6,7 +6,7 @@ import torch
 import torchvision.transforms as T
 from PIL import Image
 from torch.utils.data import Dataset
-
+import glob, os
 
 class IndexedTarDataset(Dataset):
     def __init__(
@@ -68,4 +68,56 @@ class IndexedTarDataset(Dataset):
     def __getitem__(self, i):
         example = dict()
         example["image"] = self.preprocess_image(self.index[i])
+        return example
+
+class ImageFolderDataset(Dataset):
+    def __init__(
+        self,
+        data_path,
+        size=None,
+        random_crop=False,
+        aug_mode="default",
+    ):
+        self.size = size
+        self.random_crop = random_crop
+        self.aug_mode = aug_mode
+
+        if aug_mode == "default":
+            assert self.size is not None and self.size > 0
+            self.rescaler = T.Resize(self.size)
+            if not self.random_crop:
+                self.cropper = T.CenterCrop((self.size, self.size))
+            else:
+                self.cropper = T.RandomCrop((self.size, self.size))
+            self.preprocessor = T.Compose([self.rescaler, self.cropper])
+        else:
+            raise NotImplementedError
+
+        # Get all image files
+        self.image_paths = []
+        for ext in ['*.jpg', '*.jpeg', '*.png', '*.bmp', '*.tiff']:
+            self.image_paths.extend(glob.glob(os.path.join(data_path, ext)))
+            self.image_paths.extend(glob.glob(os.path.join(data_path, ext.upper())))
+        
+        self.image_paths = sorted(self.image_paths)
+        print(f"Found {len(self.image_paths)} images in {data_path}")
+
+    def __len__(self):
+        return len(self.image_paths)
+
+    def get_image(self, image_path):
+        image = Image.open(image_path).convert("RGB")
+        image.load()
+        return image
+
+    def preprocess_image(self, image_path):
+        image = self.get_image(image_path)
+        image = self.preprocessor(image)
+        image = np.array(image)
+        image = (image / 127.5 - 1.0).astype(np.float32)
+        return image
+
+    def __getitem__(self, i):
+        example = dict()
+        example["image"] = self.preprocess_image(self.image_paths[i])
         return example

@@ -1,0 +1,226 @@
+; ModuleID = 'LLVMDialectModule'
+source_filename = "LLVMDialectModule"
+target datalayout = "e-p6:32:32-i64:64-i128:128-v16:16-v32:32-n16:32:64"
+
+define ptx_kernel void @triton_poi_fused__to_copy_5(ptr addrspace(1) %0, ptr addrspace(1) %1, i32 %2, ptr addrspace(1) readnone captures(none) %3) local_unnamed_addr !dbg !6 {
+  %5 = tail call i32 @llvm.nvvm.read.ptx.sreg.ctaid.x(), !dbg !9
+  %6 = shl i32 %5, 10, !dbg !10
+  %7 = tail call i32 @llvm.nvvm.read.ptx.sreg.tid.x(), !dbg !11
+  %8 = shl i32 %7, 3, !dbg !11
+  %9 = and i32 %8, 1016, !dbg !11
+  %10 = or disjoint i32 %9, %6, !dbg !12
+  %11 = or disjoint i32 %10, 1, !dbg !12
+  %12 = or disjoint i32 %10, 2, !dbg !12
+  %13 = or disjoint i32 %10, 3, !dbg !12
+  %14 = or disjoint i32 %10, 4, !dbg !12
+  %15 = or disjoint i32 %10, 5, !dbg !12
+  %16 = or disjoint i32 %10, 6, !dbg !12
+  %17 = or disjoint i32 %10, 7, !dbg !12
+  %18 = sdiv i32 %10, 48, !dbg !13
+  %19 = mul i32 %18, 48, !dbg !14
+  %.decomposed = sub i32 %10, %19, !dbg !14
+  %20 = srem i32 %11, 48, !dbg !14
+  %21 = srem i32 %12, 48, !dbg !14
+  %22 = srem i32 %13, 48, !dbg !14
+  %23 = srem i32 %14, 48, !dbg !14
+  %24 = srem i32 %15, 48, !dbg !14
+  %25 = srem i32 %16, 48, !dbg !14
+  %26 = srem i32 %17, 48, !dbg !14
+  %27 = srem i32 %18, 4096, !dbg !15
+  %.lhs.trunc = trunc nsw i32 %27 to i16, !dbg !16
+  %.lhs.trunc.frozen = freeze i16 %.lhs.trunc, !dbg !17
+  %28 = sdiv i16 %.lhs.trunc.frozen, 64, !dbg !17
+  %29 = mul i16 %28, 64, !dbg !16
+  %.decomposed38 = sub i16 %.lhs.trunc.frozen, %29, !dbg !16
+  %narrow = mul nsw i16 %.decomposed38, 12, !dbg !18
+  %30 = sext i16 %narrow to i32, !dbg !18
+  %.lhs.trunc4 = trunc nsw i32 %.decomposed to i8, !dbg !19
+  %.lhs.trunc4.frozen = freeze i8 %.lhs.trunc4, !dbg !19
+  %31 = sdiv i8 %.lhs.trunc4.frozen, 12, !dbg !19
+  %.sext5 = sext i8 %31 to i32, !dbg !19
+  %.lhs.trunc6 = trunc nsw i32 %20 to i8, !dbg !19
+  %.lhs.trunc6.frozen = freeze i8 %.lhs.trunc6, !dbg !19
+  %32 = sdiv i8 %.lhs.trunc6.frozen, 12, !dbg !19
+  %.sext7 = sext i8 %32 to i32, !dbg !19
+  %.lhs.trunc8 = trunc nsw i32 %21 to i8, !dbg !19
+  %.lhs.trunc8.frozen = freeze i8 %.lhs.trunc8, !dbg !19
+  %33 = sdiv i8 %.lhs.trunc8.frozen, 12, !dbg !19
+  %.sext9 = sext i8 %33 to i32, !dbg !19
+  %.lhs.trunc10 = trunc nsw i32 %22 to i8, !dbg !19
+  %.lhs.trunc10.frozen = freeze i8 %.lhs.trunc10, !dbg !19
+  %34 = sdiv i8 %.lhs.trunc10.frozen, 12, !dbg !19
+  %.sext11 = sext i8 %34 to i32, !dbg !19
+  %.lhs.trunc12 = trunc nsw i32 %23 to i8, !dbg !19
+  %.lhs.trunc12.frozen = freeze i8 %.lhs.trunc12, !dbg !19
+  %35 = sdiv i8 %.lhs.trunc12.frozen, 12, !dbg !19
+  %.sext13 = sext i8 %35 to i32, !dbg !19
+  %.lhs.trunc14 = trunc nsw i32 %24 to i8, !dbg !19
+  %.lhs.trunc14.frozen = freeze i8 %.lhs.trunc14, !dbg !19
+  %36 = sdiv i8 %.lhs.trunc14.frozen, 12, !dbg !19
+  %.sext15 = sext i8 %36 to i32, !dbg !19
+  %.lhs.trunc16 = trunc nsw i32 %25 to i8, !dbg !19
+  %.lhs.trunc16.frozen = freeze i8 %.lhs.trunc16, !dbg !19
+  %37 = sdiv i8 %.lhs.trunc16.frozen, 12, !dbg !19
+  %.sext17 = sext i8 %37 to i32, !dbg !19
+  %.lhs.trunc18 = trunc nsw i32 %26 to i8, !dbg !19
+  %.lhs.trunc18.frozen = freeze i8 %.lhs.trunc18, !dbg !19
+  %38 = sdiv i8 %.lhs.trunc18.frozen, 12, !dbg !19
+  %.sext19 = sext i8 %38 to i32, !dbg !19
+  %39 = mul nsw i32 %.sext5, 768, !dbg !20
+  %40 = mul nsw i32 %.sext7, 768, !dbg !20
+  %41 = mul nsw i32 %.sext9, 768, !dbg !20
+  %42 = mul nsw i32 %.sext11, 768, !dbg !20
+  %43 = mul nsw i32 %.sext13, 768, !dbg !20
+  %44 = mul nsw i32 %.sext15, 768, !dbg !20
+  %45 = mul nsw i32 %.sext17, 768, !dbg !20
+  %46 = mul nsw i32 %.sext19, 768, !dbg !20
+  %.sext21 = sext i16 %28 to i32, !dbg !17
+  %47 = mul nsw i32 %.sext21, 3072, !dbg !21
+  %48 = srem i32 %10, 196608, !dbg !22
+  %49 = sub nsw i32 %10, %48, !dbg !22
+  %50 = mul i8 %31, 12, !dbg !23
+  %.decomposed39 = sub i8 %.lhs.trunc4.frozen, %50, !dbg !23
+  %.sext23 = sext i8 %.decomposed39 to i32, !dbg !23
+  %51 = mul i8 %32, 12, !dbg !23
+  %.decomposed40 = sub i8 %.lhs.trunc6.frozen, %51, !dbg !23
+  %.sext25 = sext i8 %.decomposed40 to i32, !dbg !23
+  %52 = mul i8 %33, 12, !dbg !23
+  %.decomposed41 = sub i8 %.lhs.trunc8.frozen, %52, !dbg !23
+  %.sext27 = sext i8 %.decomposed41 to i32, !dbg !23
+  %53 = mul i8 %34, 12, !dbg !23
+  %.decomposed42 = sub i8 %.lhs.trunc10.frozen, %53, !dbg !23
+  %.sext29 = sext i8 %.decomposed42 to i32, !dbg !23
+  %54 = mul i8 %35, 12, !dbg !23
+  %.decomposed43 = sub i8 %.lhs.trunc12.frozen, %54, !dbg !23
+  %.sext31 = sext i8 %.decomposed43 to i32, !dbg !23
+  %55 = mul i8 %36, 12, !dbg !23
+  %.decomposed44 = sub i8 %.lhs.trunc14.frozen, %55, !dbg !23
+  %.sext33 = sext i8 %.decomposed44 to i32, !dbg !23
+  %56 = mul i8 %37, 12, !dbg !23
+  %.decomposed45 = sub i8 %.lhs.trunc16.frozen, %56, !dbg !23
+  %.sext35 = sext i8 %.decomposed45 to i32, !dbg !23
+  %57 = mul i8 %38, 12, !dbg !23
+  %.decomposed46 = sub i8 %.lhs.trunc18.frozen, %57, !dbg !23
+  %.sext37 = sext i8 %.decomposed46 to i32, !dbg !23
+  %58 = add i32 %49, %30, !dbg !24
+  %59 = add i32 %58, %.sext23, !dbg !25
+  %60 = add i32 %59, %39, !dbg !26
+  %61 = add i32 %60, %47, !dbg !27
+  %62 = add i32 %58, %.sext25, !dbg !25
+  %63 = add i32 %62, %40, !dbg !26
+  %64 = add i32 %63, %47, !dbg !27
+  %65 = add i32 %58, %.sext27, !dbg !25
+  %66 = add i32 %65, %41, !dbg !26
+  %67 = add i32 %66, %47, !dbg !27
+  %68 = add i32 %58, %.sext29, !dbg !25
+  %69 = add i32 %68, %42, !dbg !26
+  %70 = add i32 %69, %47, !dbg !27
+  %71 = add i32 %58, %.sext31, !dbg !25
+  %72 = add i32 %71, %43, !dbg !26
+  %73 = add i32 %72, %47, !dbg !27
+  %74 = add i32 %58, %.sext33, !dbg !25
+  %75 = add i32 %74, %44, !dbg !26
+  %76 = add i32 %75, %47, !dbg !27
+  %77 = add i32 %58, %.sext35, !dbg !25
+  %78 = add i32 %77, %45, !dbg !26
+  %79 = add i32 %78, %47, !dbg !27
+  %80 = add i32 %58, %.sext37, !dbg !25
+  %81 = add i32 %80, %46, !dbg !26
+  %82 = add i32 %81, %47, !dbg !27
+  %83 = sext i32 %61 to i64, !dbg !28
+  %84 = getelementptr float, ptr addrspace(1) %0, i64 %83, !dbg !28
+  %85 = sext i32 %64 to i64, !dbg !28
+  %86 = getelementptr float, ptr addrspace(1) %0, i64 %85, !dbg !28
+  %87 = sext i32 %67 to i64, !dbg !28
+  %88 = getelementptr float, ptr addrspace(1) %0, i64 %87, !dbg !28
+  %89 = sext i32 %70 to i64, !dbg !28
+  %90 = getelementptr float, ptr addrspace(1) %0, i64 %89, !dbg !28
+  %91 = sext i32 %73 to i64, !dbg !28
+  %92 = getelementptr float, ptr addrspace(1) %0, i64 %91, !dbg !28
+  %93 = sext i32 %76 to i64, !dbg !28
+  %94 = getelementptr float, ptr addrspace(1) %0, i64 %93, !dbg !28
+  %95 = sext i32 %79 to i64, !dbg !28
+  %96 = getelementptr float, ptr addrspace(1) %0, i64 %95, !dbg !28
+  %97 = sext i32 %82 to i64, !dbg !28
+  %98 = getelementptr float, ptr addrspace(1) %0, i64 %97, !dbg !28
+  %99 = tail call i32 asm sideeffect "mov.u32 $0, 0x0;\0A\09ld.global.b32 { $0 }, [ $1 + 0 ];", "=r,l"(ptr addrspace(1) %84) #1, !dbg !29
+  %100 = tail call i32 asm sideeffect "mov.u32 $0, 0x0;\0A\09ld.global.b32 { $0 }, [ $1 + 0 ];", "=r,l"(ptr addrspace(1) %86) #1, !dbg !29
+  %101 = tail call i32 asm sideeffect "mov.u32 $0, 0x0;\0A\09ld.global.b32 { $0 }, [ $1 + 0 ];", "=r,l"(ptr addrspace(1) %88) #1, !dbg !29
+  %102 = tail call i32 asm sideeffect "mov.u32 $0, 0x0;\0A\09ld.global.b32 { $0 }, [ $1 + 0 ];", "=r,l"(ptr addrspace(1) %90) #1, !dbg !29
+  %103 = tail call i32 asm sideeffect "mov.u32 $0, 0x0;\0A\09ld.global.b32 { $0 }, [ $1 + 0 ];", "=r,l"(ptr addrspace(1) %92) #1, !dbg !29
+  %104 = tail call i32 asm sideeffect "mov.u32 $0, 0x0;\0A\09ld.global.b32 { $0 }, [ $1 + 0 ];", "=r,l"(ptr addrspace(1) %94) #1, !dbg !29
+  %105 = tail call i32 asm sideeffect "mov.u32 $0, 0x0;\0A\09ld.global.b32 { $0 }, [ $1 + 0 ];", "=r,l"(ptr addrspace(1) %96) #1, !dbg !29
+  %106 = tail call i32 asm sideeffect "mov.u32 $0, 0x0;\0A\09ld.global.b32 { $0 }, [ $1 + 0 ];", "=r,l"(ptr addrspace(1) %98) #1, !dbg !29
+  %107 = sext i32 %10 to i64, !dbg !30
+  %108 = getelementptr bfloat, ptr addrspace(1) %1, i64 %107, !dbg !30
+  %109 = insertelement <2 x i32> poison, i32 %99, i64 0, !dbg !29
+  %110 = insertelement <2 x i32> %109, i32 %100, i64 1, !dbg !29
+  %111 = bitcast <2 x i32> %110 to <2 x float>, !dbg !29
+  %112 = fptrunc <2 x float> %111 to <2 x bfloat>, !dbg !31
+  %113 = insertelement <2 x i32> poison, i32 %101, i64 0, !dbg !29
+  %114 = insertelement <2 x i32> %113, i32 %102, i64 1, !dbg !29
+  %115 = bitcast <2 x i32> %114 to <2 x float>, !dbg !29
+  %116 = fptrunc <2 x float> %115 to <2 x bfloat>, !dbg !31
+  %117 = insertelement <2 x i32> poison, i32 %103, i64 0, !dbg !29
+  %118 = insertelement <2 x i32> %117, i32 %104, i64 1, !dbg !29
+  %119 = bitcast <2 x i32> %118 to <2 x float>, !dbg !29
+  %120 = fptrunc <2 x float> %119 to <2 x bfloat>, !dbg !31
+  %121 = insertelement <2 x i32> poison, i32 %105, i64 0, !dbg !29
+  %122 = insertelement <2 x i32> %121, i32 %106, i64 1, !dbg !29
+  %123 = bitcast <2 x i32> %122 to <2 x float>, !dbg !29
+  %124 = fptrunc <2 x float> %123 to <2 x bfloat>, !dbg !31
+  %125 = bitcast <2 x bfloat> %112 to i32, !dbg !31
+  %126 = bitcast <2 x bfloat> %116 to i32, !dbg !31
+  %127 = bitcast <2 x bfloat> %120 to i32, !dbg !31
+  %128 = bitcast <2 x bfloat> %124 to i32, !dbg !31
+  tail call void asm sideeffect "st.global.v4.b32 [ $4 + 0 ], { $0, $1, $2, $3 };", "r,r,r,r,l"(i32 %125, i32 %126, i32 %127, i32 %128, ptr addrspace(1) %108) #1, !dbg !31
+  ret void, !dbg !32
+}
+
+; Function Attrs: mustprogress nocallback nofree nosync nounwind speculatable willreturn memory(none)
+declare noundef i32 @llvm.nvvm.read.ptx.sreg.ctaid.x() #0
+
+; Function Attrs: mustprogress nocallback nofree nosync nounwind speculatable willreturn memory(none)
+declare noundef i32 @llvm.nvvm.read.ptx.sreg.tid.x() #0
+
+attributes #0 = { mustprogress nocallback nofree nosync nounwind speculatable willreturn memory(none) }
+attributes #1 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+!llvm.dbg.cu = !{!2}
+!nvvm.annotations = !{!4}
+!llvm.ident = !{!5}
+
+!0 = !{i32 2, !"Debug Info Version", i32 3}
+!1 = !{i32 4, !"nvvm-reflect-ftz", i32 1}
+!2 = distinct !DICompileUnit(language: DW_LANG_C, file: !3, producer: "triton", isOptimized: true, runtimeVersion: 0, emissionKind: LineTablesOnly)
+!3 = !DIFile(filename: "cyypxint2bbcmytj3zhf2boktamkgkjbjxdrdktu2kgyjpttyovg.py", directory: "results/my_experiment/torchinductor_cache_0/yy")
+!4 = !{ptr @triton_poi_fused__to_copy_5, !"reqntidx", i32 128}
+!5 = !{!"clang version 3.8.0 (tags/RELEASE_380/final)"}
+!6 = distinct !DISubprogram(name: "triton_poi_fused__to_copy_5", linkageName: "triton_poi_fused__to_copy_5", scope: !3, file: !3, line: 18, type: !7, scopeLine: 18, spFlags: DISPFlagDefinition | DISPFlagOptimized, unit: !2)
+!7 = !DISubroutineType(cc: DW_CC_normal, types: !8)
+!8 = !{}
+!9 = !DILocation(line: 20, column: 28, scope: !6)
+!10 = !DILocation(line: 20, column: 33, scope: !6)
+!11 = !DILocation(line: 21, column: 36, scope: !6)
+!12 = !DILocation(line: 21, column: 23, scope: !6)
+!13 = !DILocation(line: 24, column: 21, scope: !6)
+!14 = !DILocation(line: 23, column: 19, scope: !6)
+!15 = !DILocation(line: 24, column: 27, scope: !6)
+!16 = !DILocation(line: 27, column: 40, scope: !6)
+!17 = !DILocation(line: 27, column: 76, scope: !6)
+!18 = !DILocation(line: 27, column: 35, scope: !6)
+!19 = !DILocation(line: 27, column: 58, scope: !6)
+!20 = !DILocation(line: 27, column: 52, scope: !6)
+!21 = !DILocation(line: 27, column: 70, scope: !6)
+!22 = !DILocation(line: 27, column: 89, scope: !6)
+!23 = !DILocation(line: 27, column: 101, scope: !6)
+!24 = !DILocation(line: 27, column: 47, scope: !6)
+!25 = !DILocation(line: 27, column: 64, scope: !6)
+!26 = !DILocation(line: 27, column: 82, scope: !6)
+!27 = !DILocation(line: 27, column: 96, scope: !6)
+!28 = !DILocation(line: 27, column: 30, scope: !6)
+!29 = !DILocation(line: 27, column: 108, scope: !6)
+!30 = !DILocation(line: 29, column: 25, scope: !6)
+!31 = !DILocation(line: 29, column: 36, scope: !6)
+!32 = !DILocation(line: 29, column: 4, scope: !6)

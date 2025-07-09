@@ -5,18 +5,20 @@ import glob
 import os
 import shutil
 import time
+import json
 
 import fsspec
 import lpips
 import torch
 import torch.distributed as dist
+from torch.distributed.optim import ZeroRedundancyOptimizer
 import torch.optim as optim
 from mup import MuAdam, MuAdamW
 from omegaconf import OmegaConf
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.tensorboard import SummaryWriter
 
-from flowmo import models, perceptual_loss, train_utils
+import models, perceptual_loss, train_utils
 
 torch.set_float32_matmul_precision("medium")
 torch.backends.cudnn.enabled = True
@@ -41,14 +43,28 @@ def train_step(config, model, batch, optimizer, aux_state):
 
     optimizer.zero_grad()
     b = batch["image"].shape[0]
-    chunksize = b // config.opt.n_grad_acc
+
+    # Ensure we don't have more gradient accumulation steps than batch size
+    effective_grad_acc = min(config.opt.n_grad_acc, b)
+    chunksize = max(1, b // effective_grad_acc)  # Ensure at least 1 element per chunk
+
+    # chunksize = b // config.opt.n_grad_acc
+
+    # Only create as many chunks as we have elements
+    num_chunks = min(effective_grad_acc, b)  #this is an additional mode next forloop change
+
     batch_chunks = [
         {k: v[i * chunksize : (i + 1) * chunksize] for (k, v) in batch.items()}
-        for i in range(config.opt.n_grad_acc)
+        # for i in range(config.opt.n_grad_acc) #for loop change that uses num_chunks
+        for i in range(num_chunks)  # Use num_chunks instead of n_grad_acc
     ]
 
+    # Filter out empty chunks again additional change
+    batch_chunks = [chunk for chunk in batch_chunks if chunk["image"].shape[0] > 0]
+
+
     total_loss = 0.0
-    assert len(batch_chunks) == config.opt.n_grad_acc
+    # assert len(batch_chunks) == config.opt.n_grad_acc  #origninal code part
     for i, batch_chunk in enumerate(batch_chunks):
         with (
             contextlib.nullcontext()
@@ -60,10 +76,16 @@ def train_step(config, model, batch, optimizer, aux_state):
                 dtype=dtype,
             ):
                 loss, aux = models.rf_loss(config, model, batch_chunk, aux_state)
-                loss = loss / config.opt.n_grad_acc
+                # loss = loss / config.opt.n_grad_acc #original code part
+                loss = loss / len(batch_chunks)  # Normalize by number of chunks
 
             loss.backward()
             total_loss += loss.detach()
+
+            #Clear intermediate variables to free memory:
+            del loss 
+            if i < config.opt.n_grad_acc - 1:
+                torch.cuda.empty_cache()
 
     if config.opt.log_norms:
         original_grad_norm = _get_norm(model, getter=lambda p: p.grad)
@@ -72,7 +94,6 @@ def train_step(config, model, batch, optimizer, aux_state):
 
     optimizer.step()
     return total_loss, aux
-
 
 def main(args, config):
     config = train_utils.restore_config(config)
@@ -139,12 +160,21 @@ def main(args, config):
     )
 
     def build_optimizer(pgs):
-        optimizer = opt_cls(
+        # optimizer = opt_cls(
+        #     pgs,
+        #     lr=config.opt.lr,
+        #     weight_decay=config.opt.weight_decay,
+        #     betas=(config.opt.beta1, config.opt.beta2),
+        #     cpu_offload=True
+        # )
+        optimizer = ZeroRedundancyOptimizer(
             pgs,
-            lr=config.opt.lr,
-            weight_decay=config.opt.weight_decay,
-            betas=(config.opt.beta1, config.opt.beta2),
+            optimizer_class=opt_cls,
+            parameters_as_bucket_view=True,
+            overlap_with_ddp=True,
+            cpu_offload=True,
         )
+
         return optimizer
 
     optimizer = build_optimizer([encoder_pg, decoder_pg])
@@ -388,8 +418,22 @@ def main(args, config):
 
 
 if __name__ == "__main__":
+    # Initialize distributed training for single GPU
+    import torch.distributed as dist
+    import os
+    
+    # Set environment variables for single GPU distributed training
+    # os.environ['MASTER_ADDR'] = 'localhost'
+    # os.environ['MASTER_PORT'] = '12355'
+    # os.environ['RANK'] = '0'
+    # os.environ['WORLD_SIZE'] = '1'
+    
+    # # Initialize the process group
+    # dist.init_process_group(backend='nccl', rank=0, world_size=1)
+    
     try:
         args, config = train_utils.get_args_and_config()
         main(args, config)
     finally:
-        torch.distributed.destroy_process_group()
+        if dist.is_initialized():
+            torch.distributed.destroy_process_group()

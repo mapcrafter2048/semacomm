@@ -1,0 +1,62 @@
+global_seed: 0
+data:
+  name: image_folder
+  path: /home/utka/proj/semacomm/Eval_data
+  batch_size: 2
+  eval_batch_size: 2
+  image_size: 256
+  num_workers: 2
+  n_frames: 1
+model:
+  enable_mup: true
+  patch_size: 4
+  mup_width: 6
+  enc_mup_width: 4
+  fix_initial_norms: true
+  fix_norm_mode: l2
+  quantization_type: lfq
+  code_length: 256
+  context_dim: 18
+  codebook_size_for_entropy: 9
+  entropy_loss_weight: 0.0025
+  commit_loss_weight: 0.000625
+  enc_depth: 8
+  dec_depth: 16
+  enable_cfg: true
+  ema_decay: 0.9999
+  posttrain_sample: false
+  posttrain_sample_enable_cfg: false
+  posttrain_sample_k: 8
+opt:
+  lr: 0.0001
+  n_grad_acc: 2
+  schedule: fat_lognormal
+  freeze_encoder: false
+  freeze_encoder_after: 200000
+  weight_decay: 0.0
+  log_norms: true
+  lpips_weight: 0.1
+  lpips_mode: vgg
+  beta1: 0.9
+  beta2: 0.95
+trainer:
+  enable_bfloat16: true
+  log_every: 100
+  checkpoint_every: 5000
+  max_steps: 10000000000000
+  keep_every: 200000
+  gs_checkpoint_bucket: ''
+eval:
+  reconstruction: true
+  state_dict_key: model_ema_state_dict
+  eval_dir: ''
+  eval_baseline: ''
+  continuous: true
+  force_ckpt_path: null
+  subsample_rate: 1
+  sampling:
+    sample_steps: 25
+    schedule: pow_2.0
+    cfg: 1
+    mode: rf
+    cfg_interval: (.17,1.02)

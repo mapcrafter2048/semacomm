@@ -1,0 +1,15 @@
+condition_name,loss_name,loss_value
+model_reconstruction,lpips,0.12
+model_reconstruction,psnr,32.5
+model_reconstruction,ssim,0.92
+model_reconstruction,mse,0.008
+udp_lr0.05_ps8,lpips,0.15
+udp_lr0.05_ps8,psnr,30.1
+udp_lr0.05_ps8,ssim,0.89
+udp_lr0.05_ps8,mse,0.012
+udp_lr0.05_ps16,lpips,0.14
+udp_lr0.05_ps16,psnr,31.0
+udp_lr0.05_ps16,ssim,0.9
+udp_lr0.05_ps16,mse,0.01
+other_condition,lpips,0.2
+other_condition,psnr,25.0

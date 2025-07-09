@@ -2,4 +2,8 @@ flowmo_hi.pth
 flowmo_lo.pth
 flowmos/
 digest.md
-
+.vscode
+flowmo/results/deepspeed_experiment/checkpoints/step_5000
+flowmo/results/deepspeed_experiment/checkpoints/step_10000
+flowmo/model.safetensors
+flowmo/pytorch_model.bin

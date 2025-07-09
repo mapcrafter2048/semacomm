@@ -15,11 +15,12 @@ from mup import MuReadout, set_base_shapes
 from omegaconf import OmegaConf
 from torch.utils.data import DataLoader
 
-from flowmo import data, models
+import data, models
 
 
 def get_args_and_unknown():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--config_path", type=str, help="Path to the YAML configuration file.")
     parser.add_argument("--results-dir", type=str, default="results")
     parser.add_argument("--experiment-name", type=str, default="my_experiment")
     parser.add_argument("--resume-from-ckpt", type=str, default="")
@@ -60,6 +61,7 @@ def restore_config(config):
 def get_args_and_config():
     args, unknown = get_args_and_unknown()
 
+    # config = OmegaConf.load(args.config_path)
     config = OmegaConf.load("flowmo/configs/base.yaml")
     OmegaConf.set_struct(config, True)
     cli = OmegaConf.from_dotlist(unknown)
@@ -98,40 +100,79 @@ def wrap_dataloader(dataloader):
 
 
 def load_dataset(config, split, shuffle_val=False):
-    if split == "train":
-        dataset = data.IndexedTarDataset(
-            config.data.imagenet_train_tar,
-            config.data.imagenet_train_index,
-            size=config.data.image_size,
-            random_crop=True,
-        )
+    if config.data.name == "image_folder":
+        # Handle image folder dataset
+        if split == "train":
+            data_path = os.path.join(config.data.path, "train")
+            dataset = data.ImageFolderDataset(
+                data_path,
+                size=config.data.image_size,
+                random_crop=True,
+            )
+        elif split == "val":
+            data_path = os.path.join(config.data.path, "val")
+            dataset = data.ImageFolderDataset(
+                data_path,
+                size=config.data.image_size,
+                random_crop=False,
+            )
+        else:
+            raise NotImplementedError
+            
         dataloader = DataLoader(
             dataset,
-            batch_size=config.data.batch_size,
+            batch_size=config.data.batch_size if split == "train" else config.data.eval_batch_size,
             num_workers=config.data.num_workers,
-            shuffle=True,
+            shuffle=True if split == "train" else shuffle_val,
             pin_memory=True,
-            drop_last=True,
+            drop_last=True if split == "train" else False,
         )
-        dataloader.sampler.replacement = True
+        
+        if split == "train":
+            dataloader.sampler.replacement = True
         return dataloader
-    elif split == "val":
-        dataset = data.IndexedTarDataset(
-            config.data.imagenet_val_tar,
-            config.data.imagenet_val_index,
-            size=config.data.image_size,
-            random_crop=False,
-        )
-        return DataLoader(
-            dataset,
-            batch_size=config.data.batch_size,
-            num_workers=config.data.num_workers,
-            shuffle=shuffle_val,
-            pin_memory=True,
-            drop_last=False,
-        )
-    else:
-        raise NotImplementedError
+
+
+
+    elif config.data.name == "imagenet" or not hasattr(config.data, "imagenet_train_tar"):
+
+        if split == "train":
+            dataset = data.IndexedTarDataset(
+                config.data.imagenet_train_tar,
+                config.data.imagenet_train_index,
+                size=config.data.image_size,
+                random_crop=True,
+            )
+            dataloader = DataLoader(
+                dataset,
+                batch_size=config.data.batch_size,
+                num_workers=config.data.num_workers,
+                shuffle=True,
+                pin_memory=True,
+                drop_last=True,
+            )
+            dataloader.sampler.replacement = True
+            return dataloader
+        elif split == "val":
+            dataset = data.IndexedTarDataset(
+                config.data.imagenet_val_tar,
+                config.data.imagenet_val_index,
+                size=config.data.image_size,
+                random_crop=False,
+            )
+            return DataLoader(
+                dataset,
+                batch_size=config.data.batch_size,
+                num_workers=config.data.num_workers,
+                shuffle=shuffle_val,
+                pin_memory=True,
+                drop_last=False,
+            )
+        else:
+            raise NotImplementedError
+    
+
+
 
 
 def memory_usage():
