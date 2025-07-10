@@ -275,7 +275,7 @@ def main_simple():
     """Simple main function with default values, no argument parsing"""
     # Default values
     # checkpoint_path = "flowmo_lo.pth"
-    checkpoint_path = "flowmo/pytorch_model.bin"
+    checkpoint_path = "flowmo_lo.pth"
     context_dim = 18
     # image_path = "Eval_data/VisDrone2019-MOT-train_uav0000013_01392_v_0000001.jpg"  # Default image path
     image_path = "/home/utka/Downloads/n01514859_hen.JPEG"

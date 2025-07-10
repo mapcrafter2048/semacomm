@@ -1,0 +1,19 @@
+# FlowMo API Service Dependencies
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+python-multipart==0.0.6
+
+# Image processing
+Pillow==10.1.0
+
+# Already available in the project (from existing requirements)
+# torch>=1.9.0
+# torchvision>=0.10.0
+# numpy>=1.21.0
+# omegaconf>=2.1.0
+# lpips>=0.1.4
+# scikit-image>=0.18.0
+
+# For development and testing
+httpx==0.25.2  # For testing API endpoints

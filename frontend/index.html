@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowMo Image Reconstruction</title>
+    <link rel="stylesheet" href="static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>FlowMo Image Reconstruction</h1>
+            <p>Upload an image and apply noise to see FlowMo's reconstruction capabilities</p>
+        </header>
+
+        <div class="upload-section">
+            <div class="upload-container">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <div class="upload-icon">📁</div>
+                        <p>Drag and drop your image here or click to select</p>
+                        <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                        <button class="upload-btn" onclick="document.getElementById('imageInput').click()">
+                            Choose Image
+                        </button>
+                    </div>
+                </div>
+                <div class="image-preview" id="imagePreview" style="display: none;">
+                    <img id="previewImg" src="" alt="Preview">
+                    <button class="remove-btn" id="removeBtn">Remove</button>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="noise-control">
+                    <label for="noiseSlider">Noise Level (PSNR):</label>
+                    <div class="slider-container">
+                        <input type="range" id="noiseSlider" min="-5" max="20" value="7" step="0.1">
+                        <span id="noiseValue">7.0</span>
+                    </div>
+                    <div class="slider-labels">
+                        <span>-5 (High Noise)</span>
+                        <span>20 (Low Noise)</span>
+                    </div>
+                </div>
+                <button class="process-btn" id="processBtn" disabled>Process Image</button>
+            </div>
+        </div>
+
+        <div class="results-section" id="resultsSection" style="display: none;">
+            <h2>Results</h2>
+            <div class="images-container">
+                <div class="image-panel">
+                    <h3>Original Image</h3>
+                    <div class="image-wrapper">
+                        <img id="originalImg" src="" alt="Original">
+                        <div class="loading-spinner" id="originalSpinner" style="display: none;"></div>
+                    </div>
+                    <div class="metrics" id="originalMetrics">
+                        <p>Original image uploaded</p>
+                    </div>
+                </div>
+
+                <div class="image-panel">
+                    <h3>Noisy Image</h3>
+                    <div class="image-wrapper">
+                        <img id="noisyImg" src="" alt="Noisy">
+                        <div class="loading-spinner" id="noisySpinner" style="display: none;"></div>
+                    </div>
+                    <div class="metrics" id="noisyMetrics">
+                        <h4>Original vs Noisy</h4>
+                        <div class="metric-row">
+                            <span>PSNR:</span>
+                            <span id="noisyPsnr">-</span>
+                        </div>
+                        <div class="metric-row">
+                            <span>SSIM:</span>
+                            <span id="noisySsim">-</span>
+                        </div>
+                        <div class="metric-row">
+                            <span>LPIPS (Alex):</span>
+                            <span id="noisyLpipsAlex">-</span>
+                        </div>
+                        <div class="metric-row">
+                            <span>LPIPS (VGG):</span>
+                            <span id="noisyLpipsVgg">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="image-panel">
+                    <h3>Reconstructed Image</h3>
+                    <div class="image-wrapper">
+                        <img id="reconstructedImg" src="" alt="Reconstructed">
+                        <div class="loading-spinner" id="reconstructedSpinner" style="display: none;"></div>
+                    </div>
+                    <div class="metrics" id="reconstructedMetrics">
+                        <h4>Original vs Reconstructed</h4>
+                        <div class="metric-row">
+                            <span>PSNR:</span>
+                            <span id="reconstructedPsnr">-</span>
+                        </div>
+                        <div class="metric-row">
+                            <span>SSIM:</span>
+                            <span id="reconstructedSsim">-</span>
+                        </div>
+                        <div class="metric-row">
+                            <span>LPIPS (Alex):</span>
+                            <span id="reconstructedLpipsAlex">-</span>
+                        </div>
+                        <div class="metric-row">
+                            <span>LPIPS (VGG):</span>
+                            <span id="reconstructedLpipsVgg">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="processing-info" id="processingInfo">
+                <div class="info-row">
+                    <span>Processing Time:</span>
+                    <span id="processingTime">-</span>
+                </div>
+                <div class="info-row">
+                    <span>Noise Level:</span>
+                    <span id="appliedNoiseLevel">-</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="error-message" id="errorMessage" style="display: none;">
+            <div class="error-content">
+                <h3>Error</h3>
+                <p id="errorText"></p>
+                <button class="close-error" onclick="hideError()">Close</button>
+            </div>
+        </div>
+
+        <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+            <div class="loading-content">
+                <div class="loading-spinner-large"></div>
+                <p>Processing image with FlowMo...</p>
+                <p class="loading-subtext">This may take a few moments</p>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; 2025 FlowMo Image Reconstruction Service</p>
+    </footer>
+
+    <script src="static/js/main.js"></script>
+</body>
+</html>
