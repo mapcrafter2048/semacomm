@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FlowMo Image Reconstruction</title>
+    <title>JSCC_SemComm Image Reconstruction</title>
     <link rel="stylesheet" href="static/css/style.css">
 </head>
 <body>
     <div class="container">
         <header class="header">
-            <h1>FlowMo Image Reconstruction</h1>
-            <p>Upload an image and apply noise to see FlowMo's reconstruction capabilities</p>
+            <h1>JSCC_SemComm Image Reconstruction</h1>
+            <p>Upload an image and apply noise to see JSCC_SemComm's reconstruction capabilities</p>
         </header>
 
         <div class="upload-section">
@@ -58,6 +58,9 @@
                     </div>
                     <div class="metrics" id="originalMetrics">
                         <p>Original image uploaded</p>
+                        <div class="size-info">
+                            <span id="originalSize">Size: -</span>
+                        </div>
                     </div>
                 </div>
 
@@ -84,6 +87,9 @@
                         <div class="metric-row">
                             <span>LPIPS (VGG):</span>
                             <span id="noisyLpipsVgg">-</span>
+                        </div>
+                        <div class="size-info">
+                            <span id="noisySize">Transmission Size: -</span>
                         </div>
                     </div>
                 </div>
@@ -112,6 +118,9 @@
                             <span>LPIPS (VGG):</span>
                             <span id="reconstructedLpipsVgg">-</span>
                         </div>
+                        <div class="size-info">
+                            <span id="reconstructedSize">Transmission Size: -</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -124,6 +133,9 @@
                 <div class="info-row">
                     <span>Noise Level:</span>
                     <span id="appliedNoiseLevel">-</span>
+                </div>
+                <div class="info-row compression-ratio">
+                    <span id="compressionRatio">Compression ratio will be displayed here</span>
                 </div>
             </div>
         </div>
@@ -139,14 +151,14 @@
         <div class="loading-overlay" id="loadingOverlay" style="display: none;">
             <div class="loading-content">
                 <div class="loading-spinner-large"></div>
-                <p>Processing image with FlowMo...</p>
+                <p>Processing image with JSCC_SemComm...</p>
                 <p class="loading-subtext">This may take a few moments</p>
             </div>
         </div>
     </div>
 
     <footer class="footer">
-        <p>&copy; 2025 FlowMo Image Reconstruction Service</p>
+        <p>&copy; 2025 JSCC_SemComm Image Reconstruction Service</p>
     </footer>
 
     <script src="static/js/main.js"></script>

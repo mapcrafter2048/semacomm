@@ -193,7 +193,25 @@ class ImageProcessor {
         this.noiseValue.textContent = parseFloat(e.target.value).toFixed(1);
     }
 
-    // Helper function to format bytes to Kb (kilobits) - always return kilobits
+    // Helper function to calculate base64 size in bytes
+    calculateBase64Size(base64String) {
+        // Base64 encoding increases size by ~33%
+        // Remove data URL prefix if present
+        const base64Data = base64String.split(',').pop();
+        return Math.ceil(base64Data.length * 3 / 4);
+    }
+
+    // Helper function to format bytes to KB
+    formatBytes(bytes, decimals = 2) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ['Bytes', 'KB', 'MB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
+
+    // Helper function to format bytes to Kb (kilobits)
     formatKilobits(bytes, decimals = 1) {
         const bits = bytes * 8;
         const kilobits = bits / 1000; // Using 1000 for network transmission
@@ -247,38 +265,29 @@ class ImageProcessor {
         this.noisyImg.src = `data:image/png;base64,${result.noisy_image}`;
         this.reconstructedImg.src = `data:image/png;base64,${result.reconstructed_image}`;
 
-        // Ensure originalImageSize is valid
-        const originalSizeBytes = this.originalImageSize || 0;
-        
-        // Calculate original image size in kilobits with validation
-        const originalSizeKb = originalSizeBytes > 0 ? (originalSizeBytes * 8) / 1000 : 0;
-        
-        // Fixed transmission size for reconstructed image
-        const reconstructedTransmissionKb = 4.5; // Always 4.5 Kb as specified
+        // Calculate image sizes
+        const originalSizeBytes = this.originalImageSize;
+        const noisySizeBytes = this.calculateBase64Size(result.noisy_image);
+        const reconstructedSizeBytes = this.calculateBase64Size(result.reconstructed_image);
 
-        // Display size information with validation
+
+
+        // Display size information
         if (this.originalSize) {
-            this.originalSize.textContent = `Size: ${originalSizeKb.toFixed(1)} Kb`;
+            this.originalSize.textContent = `Size: ${this.formatKilobits(originalSizeBytes)}`;
         }
-        
         if (this.noisySize) {
-            // Noisy image has same transmission size as original
-            this.noisySize.textContent = `Transmission Size: ${originalSizeKb.toFixed(1)} Kb`;
+            this.noisySize.textContent = `Transmission Size: ${this.formatKilobits(noisySizeBytes)}`;
         }
-        
         if (this.reconstructedSize) {
-            // Always show 4.5 Kb for reconstructed image transmission
-            this.reconstructedSize.textContent = `Transmission Size: ${reconstructedTransmissionKb} Kb`;
+            const transmissionKb = this.formatKilobits(reconstructedSizeBytes);
+            this.reconstructedSize.textContent = `Transmission Size: ${transmissionKb}`;
         }
 
-        // Calculate and display compression ratio (4.5 Kb / original size) with validation
+        // Calculate and display compression ratio
         if (this.compressionRatio) {
-            if (originalSizeKb > 0) {
-                const ratio = (reconstructedTransmissionKb / originalSizeKb) * 100;
-                this.compressionRatio.textContent = `Transmitted image is ${ratio.toFixed(4)}% of original image`;
-            } else {
-                this.compressionRatio.textContent = `Transmitted image compression ratio unavailable`;
-            }
+            const ratio = (reconstructedSizeBytes / originalSizeBytes) * 100;
+            this.compressionRatio.textContent = `Transmitted image is ${ratio.toFixed(1)}% of original image`;
         }
 
         // Display noisy metrics
