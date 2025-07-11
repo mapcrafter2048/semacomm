@@ -8,7 +8,19 @@ class ImageProcessor {
         this.apiUrl = 'http://localhost:4040';
         this.currentImageData = null;
         this.originalImageSize = 0; // Store original image size in bytes
+        
         this.initializeElements();
+        
+        // Bind all event handlers ONCE to create stable function references.
+        this.handleFileSelect = this.handleFileSelect.bind(this);
+        this.handleDrop = this.handleDrop.bind(this);
+        this.handleDragOver = this.handleDragOver.bind(this);
+        this.handleDragLeave = this.handleDragLeave.bind(this);
+        this.removeImage = this.removeImage.bind(this);
+        this.processImage = this.processImage.bind(this);
+        this.updateNoiseValue = this.updateNoiseValue.bind(this);
+
+        // Call the simplified setup
         this.setupEventListeners();
     }
 
@@ -58,36 +70,22 @@ class ImageProcessor {
         this.errorText = document.getElementById('errorText');
     }
 
+    // CORRECTED AND SIMPLIFIED
     setupEventListeners() {
-        // File input change - remove any existing listeners first
-        this.imageInput.removeEventListener('change', this.boundHandleFileSelect);
-        this.boundHandleFileSelect = (e) => this.handleFileSelect(e);
-        this.imageInput.addEventListener('change', this.boundHandleFileSelect);
+        // Add listeners using the stable, pre-bound functions.
+        // No need to remove listeners because this is only called once.
+        this.imageInput.addEventListener('change', this.handleFileSelect);
+        this.uploadArea.addEventListener('click', () => this.imageInput.click());
 
-        // Drag and drop - remove existing listeners first
-        this.uploadArea.removeEventListener('click', this.boundUploadClick);
-        this.uploadArea.removeEventListener('dragover', this.boundHandleDragOver);
-        this.uploadArea.removeEventListener('dragleave', this.boundHandleDragLeave);
-        this.uploadArea.removeEventListener('drop', this.boundHandleDrop);
+        // Drag and drop
+        this.uploadArea.addEventListener('dragover', this.handleDragOver);
+        this.uploadArea.addEventListener('dragleave', this.handleDragLeave);
+        this.uploadArea.addEventListener('drop', this.handleDrop);
 
-        this.boundUploadClick = () => this.imageInput.click();
-        this.boundHandleDragOver = (e) => this.handleDragOver(e);
-        this.boundHandleDragLeave = (e) => this.handleDragLeave(e);
-        this.boundHandleDrop = (e) => this.handleDrop(e);
-
-        this.uploadArea.addEventListener('click', this.boundUploadClick);
-        this.uploadArea.addEventListener('dragover', this.boundHandleDragOver);
-        this.uploadArea.addEventListener('dragleave', this.boundHandleDragLeave);
-        this.uploadArea.addEventListener('drop', this.boundHandleDrop);
-
-        // Remove button
-        this.removeBtn.addEventListener('click', () => this.removeImage());
-
-        // Noise slider
-        this.noiseSlider.addEventListener('input', (e) => this.updateNoiseValue(e));
-
-        // Process button
-        this.processBtn.addEventListener('click', () => this.processImage());
+        // Buttons and sliders
+        this.removeBtn.addEventListener('click', this.removeImage);
+        this.noiseSlider.addEventListener('input', this.updateNoiseValue);
+        this.processBtn.addEventListener('click', this.processImage);
 
         // Check API health on load
         this.checkApiHealth();
@@ -162,13 +160,12 @@ class ImageProcessor {
             this.currentImageData = e.target.result.split(',')[1]; // Remove data URL prefix
             this.previewImg.src = e.target.result;
             
-            // Ensure proper image display
-            this.previewImg.onload = () => {
-                this.uploadArea.style.display = 'none';
-                this.imagePreview.style.display = 'block';
-                this.processBtn.disabled = false;
-                this.hideResults();
-            };
+            // FIXED: Update UI immediately after FileReader completes
+            // Removed the nested onload callback that was causing the double upload issue
+            this.uploadArea.style.display = 'none';
+            this.imagePreview.style.display = 'block';
+            this.processBtn.disabled = false;
+            this.hideResults();
         };
         
         reader.onerror = () => {
